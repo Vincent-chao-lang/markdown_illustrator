@@ -1,0 +1,31 @@
+[Unit]
+Description=Markdown Illustrator Multi-User Server
+After=network.target
+
+[Service]
+Type=notify
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/markdown_illustrator
+Environment="PATH=/opt/markdown_illustrator/venv/bin"
+Environment="FLASK_ENV=production"
+Environment="FLASK_SECRET_KEY=CHANGE_ME_TO_RANDOM_STRING"
+
+# 使用 Gunicorn 启动
+ExecStart=/opt/markdown_illustrator/venv/bin/gunicorn -c gunicorn_conf.py src.web_server:app
+
+# 重启配置
+Restart=always
+RestartSec=10
+
+# 日志
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=markdown-illustrator
+
+# 安全配置
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Mermaid 渲染测试</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+</head>
+<body class="bg-gray-900 text-white p-8">
+    <h1 class="text-2xl font-bold mb-4">Mermaid 渲染测试</h1>
+
+    <div id="test-content">
+# 测试文章
+
+## 状态图示例
+
+\```mermaid
+stateDiagram-v2
+    [*] --> 待处理
+    待处理 --> 处理中
+    处理中 --> 已完成
+    处理中 --> 失败
+    失败 --> 待处理
+    已完成 --> [*]
+\```
+
+## 流程图示例
+
+\```mermaid
+flowchart TD
+    A[开始] --> B{判断}
+    B -->|是| C[执行]
+    B -->|否| D[跳过]
+    C --> E[结束]
+    D --> E
+\```
+
+## 时序图示例
+
+\```mermaid
+sequenceDiagram
+    participant User
+    participant System
+    User->>System: 发送请求
+    System-->>User: 返回结果
+\```
+
+普通文本内容。
+    </div>
+
+    <div id="output" class="mt-8 p-4 bg-gray-800 rounded-lg">
+        <h2 class="text-xl font-semibold mb-4">渲染结果</h2>
+        <div id="rendered"></div>
+    </div>
+
+    <script>
+        // 初始化 Mermaid
+        mermaid.initialize({
+            startOnLoad: false,
+            theme: 'dark',
+            securityLevel: 'loose',
+            themeVariables: {
+                darkMode: true,
+                background: '#1e293b',
+                primaryColor: '#3b82f6',
+                primaryTextColor: '#e2e8f0',
+                primaryBorderColor: '#475569',
+                fontSize: '16px'
+            }
+        });
+
+        // 获取测试内容
+        const content = document.getElementById('test-content').textContent;
+
+        // 解析 Markdown
+        const lines = content.split('\n');
+        let inCodeBlock = false;
+        let codeBlockLang = '';
+        let codeBlockLines = [];
+        let renderedLines = [];
+
+        for (let line of lines) {
+            if (line.trim().startsWith('```')) {
+                if (!inCodeBlock) {
+                    inCodeBlock = true;
+                    codeBlockLang = line.trim().substring(3).trim() || 'text';
+                    codeBlockLines = [];
+                } else {
+                    inCodeBlock = false;
+
+                    // 检查是否是 mermaid 代码块
+                    if (codeBlockLang.toLowerCase() === 'mermaid') {
+                        const mermaidCode = codeBlockLines.join('\n');
+                        const containerId = 'mermaid-' + Date.now();
+                        renderedLines.push(`<div class="my-4 p-4 bg-gray-700 rounded-lg">`);
+                        renderedLines.push(`<div class="mermaid" id="${containerId}">${mermaidCode}</div>`);
+                        renderedLines.push(`</div>`);
+                    } else {
+                        // 普通代码块
+                        renderedLines.push('```' + codeBlockLang);
+                        renderedLines.push(...codeBlockLines);
+                        renderedLines.push('```');
+                    }
+                    codeBlockLines = [];
+                }
+            } else if (inCodeBlock) {
+                codeBlockLines.push(line);
+            } else {
+                renderedLines.push(line);
+            }
+        }
+
+        const markdownText = renderedLines.join('\n');
+        document.getElementById('rendered').innerHTML = marked.parse(markdownText);
+
+        // 渲染所有 Mermaid 图表
+        renderAllMermaidDiagrams();
+
+        async function renderAllMermaidDiagrams() {
+            const mermaidDivs = document.querySelectorAll('#rendered .mermaid');
+            console.log('找到 Mermaid 图表数量:', mermaidDivs.length);
+
+            for (const div of mermaidDivs) {
+                try {
+                    const code = div.textContent;
+                    console.log('渲染 Mermaid:', code.substring(0, 50) + '...');
+                    const { svg } = await mermaid.render('mermaid-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9), code);
+                    div.innerHTML = svg;
+
+                    const svgElement = div.querySelector('svg');
+                    if (svgElement) {
+                        svgElement.style.background = 'transparent';
+                        svgElement.style.maxWidth = '100%';
+                        svgElement.style.height = 'auto';
+                    }
+                    console.log('✓ Mermaid 渲染成功');
+                } catch (error) {
+                    console.error('✗ Mermaid 渲染失败:', error);
+                    div.innerHTML = `<pre class="text-red-400">${div.textContent}</pre>`;
+                }
+            }
+        }
+
+        console.log('测试页面加载完成');
+    </script>
+</body>
+</html>

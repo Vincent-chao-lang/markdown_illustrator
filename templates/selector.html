@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Illustrator - 图片选择器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        .candidate-card {
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        .candidate-card:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .candidate-card.selected {
+            border-color: #3B82F6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        }
+        .markdown-editor {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            tab-size: 4;
+        }
+        .markdown-preview {
+            line-height: 1.8;
+        }
+        .markdown-preview img {
+            max-width: 50%;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .markdown-preview h1, .markdown-preview h2, .markdown-preview h3 {
+            margin-top: 1.5em;
+            margin-bottom: 0.5em;
+            font-weight: 600;
+        }
+        .markdown-preview code {
+            background: #1e293b;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+        .markdown-preview pre {
+            background: #1e293b;
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        .markdown-preview table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 16px 0;
+            background: #1e293b;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .markdown-preview table th,
+        .markdown-preview table td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #374151;
+        }
+        .markdown-preview table th {
+            background: #374151;
+            font-weight: 600;
+        }
+        .markdown-preview table tr:last-child td {
+            border-bottom: none;
+        }
+        .markdown-preview table tr:hover {
+            background: #2d3748;
+        }
+        .markdown-preview blockquote {
+            border-left: 4px solid #3b82f6;
+            padding-left: 16px;
+            margin: 16px 0;
+            color: #9ca3af;
+            font-style: italic;
+        }
+        .markdown-preview ul,
+        .markdown-preview ol {
+            margin: 16px 0;
+            padding-left: 24px;
+        }
+        .markdown-preview li {
+            margin: 8px 0;
+        }
+        .split-pane {
+            display: flex;
+            height: calc(100vh - 200px);
+        }
+        .editor-pane {
+            flex: 1;
+            overflow: auto;
+        }
+        .candidates-pane {
+            width: 400px;
+            overflow-y: auto;
+            border-left: 1px solid #374151;
+        }
+        .tab-button {
+            padding: 8px 16px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+        }
+        .tab-button.active {
+            border-bottom-color: #3B82F6;
+            color: #3B82F6;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+    <div class="container mx-auto px-4 py-6">
+        <!-- 头部 -->
+        <header class="mb-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-blue-400">MarkDown自动配图</h1>
+                    <p class="text-gray-400 text-sm mt-1" id="file-info">加载中...</p>
+                    <!-- 图片来源选择器 -->
+                    <div class="flex items-center gap-2 mt-2">
+                        <label class="text-gray-400 text-sm">图片来源:</label>
+                        <select id="image-source-select" class="bg-gray-800 border border-gray-600 rounded px-2 py-1 text-sm text-gray-300 focus:border-blue-500 focus:outline-none">
+                            <option value="auto">auto - 智能选择</option>
+                            <option value="zhipu">zhipu - 智谱AI</option>
+                            <option value="doubao">doubao - 豆包</option>
+                            <option value="flux">flux - Flux.1</option>
+                            <option value="dalle">dalle - DALL-E 3</option>
+                            <option value="unsplash">unsplash - 免费图库</option>
+                            <option value="pexels">pexels - 免费图库</option>
+                            <option value="mermaid">mermaid - 技术图表</option>
+                        </select>
+                        <span class="text-gray-500 text-xs" id="source-hint">技术文档自动选Mermaid，普通文档使用图库+AI降级</span>
+                    </div>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="illustrateMarkdown()" class="px-4 py-2 bg-orange-600 hover:bg-orange-700 rounded-lg text-sm" id="illustrate-btn">
+                        开始配图
+                    </button>
+                    <button onclick="selectAllBest()" class="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm">
+                        全选第一张
+                    </button>
+                    <button onclick="saveContent()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm">
+                        保存修改
+                    </button>
+                    <button onclick="exportMarkdown()" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm">
+                        导出 Markdown
+                    </button>
+                    <button onclick="toggleHelp()" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg text-sm" title="使用帮助">
+                        ❓ 帮助
+                    </button>
+                </div>
+
+                <!-- 用户信息和注销 -->
+                <div class="flex items-center gap-3 ml-4 pl-4 border-l border-gray-700">
+                    <div class="text-right">
+                        <div class="text-sm text-gray-300" id="user-name">加载中...</div>
+                        <div class="text-xs text-gray-500" id="user-quota">--/--</div>
+                    </div>
+                    <button onclick="logout()" class="px-3 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm" title="退出登录">
+                        退出
+                    </button>
+                </div>
+            </div>
+
+            <!-- 标签页切换 -->
+            <div class="flex gap-4 mt-4 border-b border-gray-700">
+                <div class="tab-button active" onclick="switchTab('preview')" id="tab-preview">
+                    预览模式
+                </div>
+                <div class="tab-button" onclick="switchTab('edit')" id="tab-edit">
+                    编辑模式
+                </div>
+                <div class="tab-button" onclick="switchTab('candidates')" id="tab-candidates">
+                    候选图管理
+                </div>
+            </div>
+        </header>
+
+        <!-- 主内容区 -->
+        <div id="preview-mode" class="mode-content">
+            <div class="split-pane">
+                <!-- Markdown 预览 -->
+                <div class="editor-pane p-4">
+                    <div id="markdown-preview" class="markdown-preview prose prose-invert max-w-none">
+                        加载中...
+                    </div>
+                </div>
+
+                <!-- 当前位置的候选图 -->
+                <div class="candidates-pane p-4">
+                    <h3 class="text-lg font-semibold mb-4">候选图选择</h3>
+                    <div id="current-candidates" class="space-y-4">
+                        <p class="text-gray-400 text-sm">点击预览中的图片查看候选图</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 编辑模式 -->
+        <div id="edit-mode" class="mode-content hidden">
+            <div class="split-pane">
+                <textarea
+                    id="markdown-editor"
+                    class="editor-pane w-full p-4 bg-gray-800 text-gray-100 resize-none outline-none"
+                    placeholder="Markdown 内容..."
+                    oninput="onEditorChange()"
+                ></textarea>
+            </div>
+        </div>
+
+        <!-- 候选图管理模式 -->
+        <div id="candidates-mode" class="mode-content hidden">
+            <div id="all-candidates-container" class="space-y-6">
+                <p class="text-gray-400">加载中...</p>
+            </div>
+        </div>
+
+        <!-- 状态栏 -->
+        <footer class="mt-4 p-4 bg-gray-800 rounded-lg">
+            <div class="flex items-center justify-between text-sm text-gray-400">
+                <div id="status-info">
+                    已选择: <span id="selected-count">0</span> / <span id="total-count">0</span> 个位置
+                </div>
+                <div id="save-status" class="text-green-400 hidden">
+                    ✓ 已保存
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        let markdownContent = '';
+        let originalContent = '';
+        let candidates = [];
+        let selections = {};
+        let imagePositions = []; // 存储图片在 Markdown 中的位置
+
+        // 图片来源提示文本映射
+        const sourceHints = {
+            'auto': '技术文档自动选Mermaid，普通文档使用图库+AI降级',
+            'zhipu': '智谱AI CogView (0.06元/张, 中文效果好)',
+            'doubao': '豆包文生图 (0.005元/张, 超便宜)',
+            'flux': 'Flux.1 (0.01元/张, 质量接近Midjourney)',
+            'dalle': 'OpenAI DALL-E 3 (~0.4元/张, 质量最好)',
+            'unsplash': 'Unsplash 免费图库 (真实照片)',
+            'pexels': 'Pexels 免费图库 (真实照片)',
+            'mermaid': 'Mermaid 图表 (完全免费, 技术图表)'
+        };
+
+        // 图片来源选择器变化事件
+        function updateSourceHint() {
+            const select = document.getElementById('image-source-select');
+            const hint = document.getElementById('source-hint');
+            hint.textContent = sourceHints[select.value] || '';
+        }
+
+        // 页面加载时获取数据
+        window.onload = async function() {
+            // 绑定图片来源选择器事件
+            document.getElementById('image-source-select').addEventListener('change', updateSourceHint);
+            updateSourceHint(); // 初始化提示文本
+
+            // 配置 marked.js
+            marked.use({
+                gfm: true,          // GitHub Flavored Markdown
+                breaks: true,       // 支持换行
+                tables: true,       // 支持表格
+                pedantic: false,
+                sanitize: false,
+                smartLists: true,
+                smartypants: false
+            });
+
+            // 初始化 Mermaid
+            mermaid.initialize({
+                startOnLoad: false,
+                theme: 'dark',
+                securityLevel: 'loose',
+                themeVariables: {
+                    darkMode: true,
+                    background: '#1e293b',
+                    primaryColor: '#3b82f6',
+                    primaryTextColor: '#e2e8f0',
+                    primaryBorderColor: '#475569',
+                    lineColor: '#64748b',
+                    secondaryColor: '#64748b',
+                    tertiaryColor: '#475569',
+                    fontSize: '16px'
+                },
+                sequence: {
+                    actorMargin: 50,
+                    boxMargin: 10,
+                    boxTextMargin: 5,
+                    noteMargin: 10,
+                    messageMargin: 35
+                }
+            });
+
+            await loadUserInfo();
+            await loadMarkdown();
+            await loadCandidates();
+            renderMarkdown();
+            switchTab('preview');
+        };
+
+        async function loadMarkdown() {
+            try {
+                const response = await fetch('/api/markdown');
+                const data = await response.json();
+                markdownContent = data.content;
+                originalContent = data.content;
+                document.getElementById('file-info').textContent = data.path;
+                document.getElementById('markdown-editor').value = data.content;
+            } catch (error) {
+                showError('加载 Markdown 失败: ' + error.message);
+            }
+        }
+
+        async function loadCandidates() {
+            try {
+                const response = await fetch('/api/candidates');
+                const data = await response.json();
+                candidates = data.candidates;
+
+                // 初始化选择
+                candidates.forEach(pos => {
+                    for (let cand of pos.candidates) {
+                        if (cand.is_selected) {
+                            selections[pos.index] = cand.index;
+                            break;
+                        }
+                    }
+                    if (selections[pos.index] === undefined && pos.candidates.length > 0) {
+                        selections[pos.index] = 0;
+                    }
+                });
+
+                updateCounts();
+            } catch (error) {
+                console.error('加载候选图失败:', error);
+            }
+        }
+
+        // 加载用户信息
+        async function loadUserInfo() {
+            try {
+                const response = await fetch('/api/me');
+                if (response.status === 401) {
+                    // 未登录，跳转到登录页
+                    window.location.href = '/login';
+                    return;
+                }
+                const data = await response.json();
+                const user = data.user;
+                document.getElementById('user-name').textContent = `${user.name} (${user.username})`;
+                document.getElementById('user-quota').textContent = `今日配额: ${user.used_today}/${user.quota_limit}`;
+            } catch (error) {
+                console.error('加载用户信息失败:', error);
+            }
+        }
+
+        // 注销
+        async function logout() {
+            if (!confirm('确定要退出登录吗？')) {
+                return;
+            }
+            try {
+                const response = await fetch('/logout', {
+                    method: 'GET',
+                    redirect: 'follow'
+                });
+                // 服务器会重定向到登录页
+                if (response.redirected) {
+                    window.location.href = response.url;
+                } else {
+                    window.location.href = '/login';
+                }
+            } catch (error) {
+                console.error('注销失败:', error);
+                // 即使出错也跳转到登录页
+                window.location.href = '/login';
+            }
+        }
+
+        function renderMarkdown() {
+            // 解析 Markdown，提取图片位置并添加可点击标记
+            const lines = markdownContent.split('\n');
+            let renderedLines = [];
+            let mermaidPlaceholders = []; // 存储 mermaid 占位符和对应的 HTML
+            imagePositions = [];
+            let imageIndex = 0;
+            let inCodeBlock = false;
+            let codeBlockLines = [];
+            let codeBlockLang = '';
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+
+                // 处理代码块
+                if (line.trim().startsWith('```')) {
+                    if (!inCodeBlock) {
+                        // 代码块开始
+                        inCodeBlock = true;
+                        codeBlockLang = line.trim().substring(3).trim() || 'text';
+                        codeBlockLines = [];
+                    } else {
+                        // 代码块结束
+                        inCodeBlock = false;
+
+                        // 检查是否是 mermaid 代码块
+                        if (codeBlockLang.toLowerCase() === 'mermaid' || (codeBlockLang === '' && hasMermaidKeywords(codeBlockLines))) {
+                            // 这是一个 Mermaid 图表，使用占位符
+                            const mermaidCode = codeBlockLines.join('\n');
+                            const placeholderIndex = mermaidPlaceholders.length;
+                            const containerId = `mermaid-${Date.now()}-${imageIndex}`;
+                            const mermaidHtml = `<div class="mermaid-container my-4 p-4 bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-700" onclick="showCandidatesForMermaid('${containerId}')"><div class="mermaid" id="${containerId}">${mermaidCode}</div><p class="text-xs text-gray-400 mt-2 text-center">点击查看候选图</p></div>`;
+                            const placeholder = `[[[MERMAID_${placeholderIndex}]]]`;
+                            mermaidPlaceholders.push({ placeholder: placeholder, html: mermaidHtml });
+                            renderedLines.push(placeholder);
+                        } else {
+                            // 普通代码块
+                            renderedLines.push('```' + codeBlockLang);
+                            renderedLines.push(...codeBlockLines);
+                            renderedLines.push('```');
+                        }
+                        codeBlockLines = [];
+                    }
+                    continue;
+                }
+
+                if (inCodeBlock) {
+                    codeBlockLines.push(line);
+                    continue;
+                }
+
+                // 检查是否是图片行
+                const imgMatch = line.match(/^!\[([^\]]+)\]\(([^)]+)\)(.*)$/);
+                if (imgMatch && !line.trim().startsWith('<!--')) {
+                    const altText = imgMatch[1];
+                    const imgPath = imgMatch[2];
+                    const suffix = imgMatch[3];
+
+                    // 找到对应的候选图位置
+                    const posData = findPositionByPath(imgPath);
+
+                    if (posData && posData.candidates.length > 1) {
+                        // 这是一个有多个候选图的位置
+                        imagePositions.push({
+                            index: imageIndex,
+                            line: i,
+                            positionIndex: posData.index,
+                            altText: altText
+                        });
+
+                        // 使用占位符
+                        const placeholderIndex = mermaidPlaceholders.length;
+                        let imgHtml;
+                        if (imgPath.startsWith('MERMAID_CODE:')) {
+                            const mermaidCode = extractMermaidCode(imgPath);
+                            const containerId = `mermaid-img-${imageIndex}`;
+                            imgHtml = `<div class="image-container my-4" data-image-index="${imageIndex}" onclick="showCandidates(${posData.index})"><div class="mermaid-container my-4 p-4 bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-700"><div class="mermaid" id="${containerId}">${mermaidCode}</div></div><p class="text-sm text-blue-400 mt-1">📊 点击查看 ${posData.candidates.length} 个候选图 (当前: 候选 ${(selections[posData.index] || 0) + 1})</p></div>`;
+                        } else {
+                            imgHtml = `<div class="image-container my-4" data-image-index="${imageIndex}" onclick="showCandidates(${posData.index})"><img src="${imgPath}" alt="${altText}" class="cursor-pointer hover:opacity-80" data-image-index="${imageIndex}"><p class="text-sm text-blue-400 mt-1">📊 点击查看 ${posData.candidates.length} 个候选图 (当前: 候选 ${(selections[posData.index] || 0) + 1})</p></div>`;
+                        }
+                        const placeholder = `[[[MERMAID_${placeholderIndex}]]]`;
+                        mermaidPlaceholders.push({ placeholder: placeholder, html: imgHtml });
+                        renderedLines.push(placeholder);
+                        imageIndex++;
+                    } else {
+                        // 普通图片，直接渲染
+                        if (imgPath.startsWith('MERMAID_CODE:')) {
+                            const mermaidCode = extractMermaidCode(imgPath);
+                            const placeholderIndex = mermaidPlaceholders.length;
+                            const containerId = `mermaid-static-${imageIndex}`;
+                            const mermaidHtml = `<div class="my-4"><div class="mermaid" id="${containerId}">${mermaidCode}</div></div>`;
+                            const placeholder = `[[[MERMAID_${placeholderIndex}]]]`;
+                            mermaidPlaceholders.push({ placeholder: placeholder, html: mermaidHtml });
+                            renderedLines.push(placeholder);
+                        } else {
+                            renderedLines.push(`<img src="${imgPath}" alt="${altText}">`);
+                        }
+                    }
+                } else {
+                    renderedLines.push(line);
+                }
+            }
+
+            // 使用 marked 渲染 Markdown
+            const markdownText = renderedLines.join('\n');
+            let renderedHtml = marked.parse(markdownText);
+
+            // 替换占位符为实际的 HTML（使用 replaceAll 确保全部替换）
+            for (const item of mermaidPlaceholders) {
+                renderedHtml = renderedHtml.replaceAll(item.placeholder, item.html);
+            }
+
+            document.getElementById('markdown-preview').innerHTML = renderedHtml;
+
+            // 渲染所有 Mermaid 图表
+            renderAllMermaidDiagrams();
+        }
+
+        function hasMermaidKeywords(lines) {
+            const keywords = [
+                'stateDiagram', 'stateDiagram-v2',
+                'sequenceDiagram',
+                'flowchart', 'graph',
+                'classDiagram',
+                'erDiagram', 'er',
+                'mindmap',
+                'gantt',
+                'pie', 'gitGraph'
+            ];
+            const text = lines.join('\n');
+            return keywords.some(kw => text.toLowerCase().includes(kw.toLowerCase()));
+        }
+
+        async function renderAllMermaidDiagrams() {
+            const mermaidDivs = document.querySelectorAll('#markdown-preview .mermaid');
+            console.log(`找到 ${mermaidDivs.length} 个 Mermaid 图表`);
+
+            for (const div of mermaidDivs) {
+                try {
+                    const code = div.textContent;
+                    console.log(`渲染 Mermaid 代码:`, code.substring(0, 50) + '...');
+                    const uniqueId = 'mermaid-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+                    const { svg } = await mermaid.render(uniqueId, code);
+                    div.innerHTML = svg;
+                    // 移除背景色，让图表透明
+                    const svgElement = div.querySelector('svg');
+                    if (svgElement) {
+                        svgElement.style.background = 'transparent';
+                        svgElement.style.maxWidth = '100%';
+                        svgElement.style.height = 'auto';
+                    }
+                    console.log(`✓ Mermaid 渲染成功: ${uniqueId}`);
+                } catch (error) {
+                    console.error('✗ Mermaid 渲染失败:', error);
+                    console.error('问题代码:', div.textContent);
+                    div.innerHTML = `<pre class="text-red-400 p-2">Mermaid 渲染失败:\n${error.message}\n\n代码:\n${div.textContent}</pre>`;
+                }
+            }
+        }
+
+        function showCandidatesForMermaid(containerId) {
+            // 找到对应位置的候选图
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            // 从 DOM 中查找对应的图片位置
+            const imageContainer = container.closest('.image-container');
+            if (imageContainer) {
+                const imageIndex = parseInt(imageContainer.dataset.imageIndex);
+                const imageData = imagePositions.find(ip => ip.index === imageIndex);
+                if (imageData) {
+                    showCandidates(imageData.positionIndex);
+                }
+            }
+        }
+
+        function extractMermaidCode(path) {
+            // 从 MERMAID_CODE:type:code 中提取代码
+            const parts = path.split(':');
+            if (parts.length >= 3) {
+                return parts.slice(2).join(':').replace(/\\n/g, '\n');
+            }
+            return '';
+        }
+
+        function findPositionByPath(path) {
+            for (let pos of candidates) {
+                for (let cand of pos.candidates) {
+                    if (cand.path === path) {
+                        return pos;
+                    }
+                }
+            }
+            return null;
+        }
+
+        function showCandidates(positionIndex) {
+            const pos = candidates.find(p => p.index === positionIndex);
+            if (!pos) return;
+
+            const container = document.getElementById('current-candidates');
+
+            let html = `
+                <div class="mb-4">
+                    <h4 class="font-semibold text-blue-300">位置 ${positionIndex + 1}: ${getTypeName(pos.image_type)}</h4>
+                    ${pos.prompt ? `<p class="text-xs text-gray-400 mt-1">${pos.prompt.substring(0, 100)}...</p>` : ''}
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+            `;
+
+            pos.candidates.forEach((cand, idx) => {
+                const isSelected = selections[positionIndex] === idx;
+                const preview = getImagePreview(cand.path);
+
+                html += `
+                    <div
+                        class="candidate-card rounded-lg overflow-hidden bg-gray-800 ${isSelected ? 'selected' : ''}"
+                        onclick="selectCandidate(${positionIndex}, ${idx})"
+                    >
+                        <div class="aspect-square bg-gray-700 flex items-center justify-center p-2">
+                            ${preview}
+                        </div>
+                        <div class="p-2 text-center text-xs">
+                            <span class="text-gray-400">候选 ${idx + 1}</span>
+                            ${isSelected ? '<span class="ml-2 text-blue-400">✓</span>' : ''}
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `</div>`;
+
+            container.innerHTML = html;
+
+            // 滚动到预览中的对应图片
+            const imgContainer = document.querySelector(`[data-image-index="${positionIndex}"]`);
+            if (imgContainer) {
+                imgContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        function getImagePreview(path) {
+            if (path.startsWith('MERMAID_CODE:')) {
+                const code = extractMermaidCode(path).substring(0, 100);
+                return `<div class="text-gray-400 text-xs text-center p-2 font-mono">${code}...</div>`;
+            }
+            return `<img src="${path}" alt="候选图" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<div class=\\'text-red-400 text-xs\\'>加载失败</div>'">`;
+        }
+
+        async function selectCandidate(positionIndex, candidateIndex) {
+            selections[positionIndex] = candidateIndex;
+
+            // 更新 UI
+            const pos = candidates.find(p => p.index === positionIndex);
+            if (pos) {
+                const selectedCand = pos.candidates[candidateIndex];
+                if (selectedCand) {
+                    // 更新 Markdown 中的图片引用
+                    await updateMarkdownImage(positionIndex, selectedCand);
+                }
+            }
+
+            // 重新渲染
+            showCandidates(positionIndex);
+            updateCounts();
+        }
+
+        async function updateMarkdownImage(positionIndex, candidate) {
+            const pos = candidates.find(p => p.index === positionIndex);
+            if (!pos) return;
+
+            // 构建新的图片行
+            const newLine = `![${candidate.alt_text}](${candidate.path}) ⭐`;
+
+            // 更新 markdownContent
+            const lines = markdownContent.split('\n');
+
+            // 找到并更新对应的图片行
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                if (line.includes(candidate.path) || line.includes(pos.candidates[0].path)) {
+                    // 检查是否是这个位置的图片
+                    const isPositionMatch = pos.candidates.some(c => line.includes(c.path));
+                    if (isPositionMatch && !line.trim().startsWith('<!--')) {
+                        lines[i] = newLine;
+
+                        // 注释掉其他候选图
+                        for (let j = i - 5; j <= i + 10; j++) {
+                            if (j >= 0 && j < lines.length && j !== i) {
+                                for (let c of pos.candidates) {
+                                    if (c.index !== candidate.index && lines[j].includes(c.path) && !lines[j].trim().startsWith('<!--')) {
+                                        lines[j] = `<!-- 候选${c.index + 1}: ![${c.alt_text}](${c.path}) -->`;
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+
+            markdownContent = lines.join('\n');
+            document.getElementById('markdown-editor').value = markdownContent;
+            renderMarkdown();
+
+            // 保存到服务器
+            try {
+                await fetch('/api/update-image', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        position: positionIndex,
+                        candidate: candidate.index
+                    })
+                });
+            } catch (error) {
+                console.error('保存失败:', error);
+            }
+        }
+
+        function renderAllCandidates() {
+            const container = document.getElementById('all-candidates-container');
+            let html = '';
+
+            candidates.forEach(pos => {
+                html += `
+                    <div class="bg-gray-800 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold text-blue-300 mb-2">位置 ${pos.index + 1}: ${getTypeName(pos.image_type)}</h3>
+                        ${pos.prompt ? `<p class="text-xs text-gray-400 mb-3">${pos.prompt.substring(0, 100)}...</p>` : ''}
+                        <div class="grid grid-cols-3 gap-3">
+                `;
+
+                pos.candidates.forEach((cand, idx) => {
+                    const isSelected = selections[pos.index] === idx;
+                    html += `
+                        <div
+                            class="candidate-card rounded-lg overflow-hidden bg-gray-700 ${isSelected ? 'selected' : ''}"
+                            onclick="selectCandidate(${pos.index}, ${idx})"
+                        >
+                            <div class="aspect-square bg-gray-600 flex items-center justify-center p-2">
+                                ${getImagePreview(cand.path)}
+                            </div>
+                            <div class="p-2 text-center text-xs">
+                                <span class="text-gray-400">候选 ${idx + 1}</span>
+                                ${isSelected ? '<span class="ml-2 text-blue-400">✓</span>' : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += `</div></div>`;
+            });
+
+            container.innerHTML = html || '<p class="text-gray-400">没有找到候选图</p>';
+        }
+
+        function switchTab(tab) {
+            // 隐藏所有内容
+            document.querySelectorAll('.mode-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-button').forEach(el => el.classList.remove('active'));
+
+            // 显示选中内容
+            document.getElementById(`${tab}-mode`).classList.remove('hidden');
+            document.getElementById(`tab-${tab}`).classList.add('active');
+
+            if (tab === 'candidates') {
+                renderAllCandidates();
+            }
+        }
+
+        function onEditorChange() {
+            markdownContent = document.getElementById('markdown-editor').value;
+        }
+
+        async function saveContent() {
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = '保存中...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/api/save-markdown', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ content: markdownContent })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    originalContent = markdownContent;
+                    showSaveStatus();
+                    // 保存成功后刷新预览
+                    renderMarkdown();
+                } else {
+                    showError('保存失败');
+                }
+            } catch (error) {
+                showError('保存失败: ' + error.message);
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        async function selectAllBest() {
+            if (!confirm('确定要为所有位置选择第一张候选图吗？')) return;
+
+            for (let pos of candidates) {
+                if (pos.candidates.length > 0) {
+                    await selectCandidate(pos.index, 0);
+                }
+            }
+        }
+
+        function updateCounts() {
+            document.getElementById('selected-count').textContent = Object.keys(selections).length;
+            document.getElementById('total-count').textContent = candidates.length;
+        }
+
+        function getTypeName(type) {
+            const names = {
+                'cover': '封面图',
+                'section': '章节配图',
+                'concept': '概念示意图',
+                'atmospheric': '氛围插图',
+                'diagram': '架构图',
+                'code_concept': '代码结构图'
+            };
+            return names[type] || type;
+        }
+
+        function showSaveStatus() {
+            const status = document.getElementById('save-status');
+            status.classList.remove('hidden');
+            setTimeout(() => status.classList.add('hidden'), 2000);
+        }
+
+        function showError(message) {
+            alert('错误: ' + message);
+        }
+
+        function exportMarkdown() {
+            // 获取当前 markdown 内容
+            const content = markdownContent || document.getElementById('markdown-editor').value;
+
+            // 创建 Blob 对象
+            const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
+
+            // 创建下载链接
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+
+            // 从文件路径中提取文件名
+            const filePath = document.getElementById('file-info').textContent;
+            let fileName = 'export.md';
+            if (filePath && filePath !== '加载中...') {
+                const pathParts = filePath.split('/');
+                const originalName = pathParts[pathParts.length - 1];
+                // 如果原文件有扩展名，去掉它
+                if (originalName.includes('.')) {
+                    fileName = originalName.replace(/\.[^.]+$/, '') + '.md';
+                } else {
+                    fileName = originalName + '.md';
+                }
+            }
+
+            link.download = fileName;
+
+            // 触发下载
+            document.body.appendChild(link);
+            link.click();
+
+            // 清理
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            console.log(`已导出: ${fileName}`);
+        }
+
+        async function illustrateMarkdown() {
+            const btn = document.getElementById('illustrate-btn');
+            const originalText = btn.textContent;
+            const originalClass = btn.className;
+
+            // 禁用按钮并显示加载状态
+            btn.textContent = '配图中...';
+            btn.disabled = true;
+            btn.className = 'px-4 py-2 bg-gray-600 rounded-lg text-sm cursor-not-allowed';
+
+            try {
+                // 获取当前页面显示的 markdown 内容（优先使用 markdownContent，如果没有则使用编辑器值）
+                const content = markdownContent || document.getElementById('markdown-editor').value;
+
+                if (!content || !content.trim()) {
+                    showError('页面内容为空');
+                    return;
+                }
+
+                // 确认是否开始配图
+                if (!confirm('即将为当前 Markdown 内容配图，这将替换页面内容。\n配图可能需要一些时间，是否继续？')) {
+                    return;
+                }
+
+                console.log('开始配图...');
+                console.log('配图内容长度:', content.length);
+
+                // 获取选择的图片来源
+                const imageSource = document.getElementById('image-source-select').value;
+                console.log('图片来源:', imageSource);
+
+                // 调用后端 API
+                const response = await fetch('/api/illustrate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        content: content,
+                        imageSource: imageSource,
+                        batch: 1
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // 更新全局和编辑器内容
+                    markdownContent = data.content;
+                    originalContent = data.content;
+                    document.getElementById('markdown-editor').value = data.content;
+                    document.getElementById('file-info').textContent = data.path;
+
+                    // 重新加载候选图数据
+                    await loadCandidates();
+
+                    // 刷新预览显示
+                    renderMarkdown();
+
+                    showSaveStatus();
+                    alert(`配图成功！\n生成了 ${data.images_generated} 张图片\n共 ${candidates.length} 个配图位置`);
+                } else {
+                    showError(data.error || '配图失败');
+                }
+
+            } catch (error) {
+                console.error('配图错误:', error);
+                showError('配图失败: ' + error.message);
+            } finally {
+                // 恢复按钮状态
+                btn.textContent = originalText;
+                btn.disabled = false;
+                btn.className = originalClass;
+            }
+        }
+
+        // 快捷键
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                if (e.key === 's') {
+                    e.preventDefault();
+                    saveContent();
+                }
+            }
+        });
+
+        // 帮助模态框控制
+        function toggleHelp() {
+            const modal = document.getElementById('help-modal');
+            if (modal.style.display === 'block') {
+                modal.style.display = 'none';
+            } else {
+                modal.style.display = 'block';
+            }
+        }
+
+        // 点击模态框外部关闭
+        window.onclick = function(event) {
+            const modal = document.getElementById('help-modal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        }
+    </script>
+
+    <!-- 帮助模态框 -->
+    <div id="help-modal" style="display: none;" class="fixed inset-0 bg-black bg-opacity-75 z-50 overflow-y-auto h-full w-full">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-gray-800 text-gray-100">
+            <!-- 关闭按钮 -->
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-700">
+                <h3 class="text-2xl font-bold text-blue-400">📖 使用帮助</h3>
+                <button onclick="toggleHelp()" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+            </div>
+
+            <!-- 帮助内容 -->
+            <div class="space-y-6 max-h-96 overflow-y-auto pr-2">
+                <!-- 快速开始 -->
+                <section>
+                    <h4 class="text-lg font-semibold text-blue-300 mb-2">🚀 快速开始</h4>
+                    <div class="bg-gray-900 p-4 rounded text-sm">
+                        <ol class="list-decimal list-inside space-y-2">
+                            <li><strong>粘贴 Markdown 内容</strong>：切换到"编辑模式"，粘贴你的文章</li>
+                            <li><strong>选择图片来源</strong>：在左上角选择图片来源
+                                <ul class="list-disc list-inside ml-6 mt-1 text-gray-400">
+                                    <li><code class="text-yellow-400">auto</code> - 智能选择（推荐）</li>
+                                    <li><code class="text-yellow-400">mermaid</code> - 技术图表（免费）</li>
+                                    <li><code class="text-yellow-400">unsplash</code> - 免费图库</li>
+                                    <li><code class="text-yellow-400">zhipu/doubao/flux</code> - AI 生成</li>
+                                </ul>
+                            </li>
+                            <li><strong>点击"开始配图"</strong>：等待配图完成</li>
+                            <li><strong>查看结果</strong>：在"预览模式"查看效果</li>
+                            <li><strong>导出文件</strong>：点击"导出 Markdown"下载</li>
+                        </ol>
+                    </div>
+                </section>
+
+                <!-- 图片来源说明 -->
+                <section>
+                    <h4 class="text-lg font-semibold text-blue-300 mb-2">🎨 图片来源说明</h4>
+                    <div class="grid grid-cols-2 gap-3 text-sm">
+                        <div class="bg-gray-900 p-3 rounded">
+                            <span class="font-semibold text-green-400">auto - 智能选择</span>
+                            <p class="text-gray-400 mt-1">技术文档用 Mermaid，普通文档用图库，封面图用 AI</p>
+                        </div>
+                        <div class="bg-gray-900 p-3 rounded">
+                            <span class="font-semibold text-blue-400">mermaid - 技术图表</span>
+                            <p class="text-gray-400 mt-1">流程图、序列图等，完全免费</p>
+                        </div>
+                        <div class="bg-gray-900 p-3 rounded">
+                            <span class="font-semibold text-purple-400">unsplash - 免费图库</span>
+                            <p class="text-gray-400 mt-1">高质量真实照片</p>
+                        </div>
+                        <div class="bg-gray-900 p-3 rounded">
+                            <span class="font-semibold text-orange-400">zhipu - 智谱AI</span>
+                            <p class="text-gray-400 mt-1">中文效果好，0.06元/张</p>
+                        </div>
+                        <div class="bg-gray-900 p-3 rounded">
+                            <span class="font-semibold text-pink-400">doubao - 豆包</span>
+                            <p class="text-gray-400 mt-1">价格便宜，0.005元/张</p>
+                        </div>
+                        <div class="bg-gray-900 p-3 rounded">
+                            <span class="font-semibold text-red-400">flux - Flux.1</span>
+                            <p class="text-gray-400 mt-1">质量最高，0.01元/张</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 界面功能 -->
+                <section>
+                    <h4 class="text-lg font-semibold text-blue-300 mb-2">🖥️ 界面功能</h4>
+                    <div class="bg-gray-900 p-4 rounded text-sm">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="border-b border-gray-700">
+                                    <th class="text-left py-2">模式</th>
+                                    <th class="text-left py-2">功能</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-gray-300">
+                                <tr class="border-b border-gray-800">
+                                    <td class="py-2 font-semibold">预览模式</td>
+                                    <td class="py-2">查看 Markdown 渲染效果，支持 Mermaid 图表</td>
+                                </tr>
+                                <tr class="border-b border-gray-800">
+                                    <td class="py-2 font-semibold">编辑模式</td>
+                                    <td class="py-2">在线编辑内容，粘贴新文章</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2 font-semibold">候选图管理</td>
+                                    <td class="py-2">查看所有配图位置，选择最满意的候选图</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- 按钮说明 -->
+                <section>
+                    <h4 class="text-lg font-semibold text-blue-300 mb-2">🔘 按钮说明</h4>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex items-center gap-2">
+                            <span class="px-2 py-1 bg-orange-600 rounded text-xs">开始配图</span>
+                            <span class="text-gray-400">为当前内容生成配图</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="px-2 py-1 bg-green-600 rounded text-xs">全选第一张</span>
+                            <span class="text-gray-400">为所有位置选择第一张候选图</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="px-2 py-1 bg-blue-600 rounded text-xs">保存修改</span>
+                            <span class="text-gray-400">保存选择到原文件</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="px-2 py-1 bg-purple-600 rounded text-xs">导出 Markdown</span>
+                            <span class="text-gray-400">下载 Markdown 文件</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 配图规则 -->
+                <section>
+                    <h4 class="text-lg font-semibold text-blue-300 mb-2">📋 配图规则</h4>
+                    <div class="bg-gray-900 p-4 rounded text-sm text-gray-300">
+                        <ul class="space-y-1">
+                            <li>✅ H1 标题后 → 封面图</li>
+                            <li>✅ H2 标题后 → 章节配图（内容 > 100 字）</li>
+                            <li>✅ 长段落 → 氛围图（段落 >= 150 字）</li>
+                            <li>⚠️ 最小间隔：3 个段落</li>
+                            <li>⚠️ 最大数量：10 张/篇</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- 快捷键 -->
+                <section>
+                    <h4 class="text-lg font-semibold text-blue-300 mb-2">⌨️ 快捷键</h4>
+                    <div class="bg-gray-900 p-4 rounded text-sm text-gray-300">
+                        <p><kbd class="px-2 py-1 bg-gray-700 rounded">Ctrl/Cmd + S</kbd> - 保存修改</p>
+                    </div>
+                </section>
+
+                <!-- 常见问题 -->
+                <section>
+                    <h4 class="text-lg font-semibold text-blue-300 mb-2">❓ 常见问题</h4>
+                    <div class="space-y-3 text-sm">
+                        <div class="bg-gray-900 p-3 rounded">
+                            <p class="font-semibold text-yellow-400">Q: 为什么有些标题后没有配图？</p>
+                            <p class="text-gray-400 mt-1">A: 智能模式下，只有后续内容超过 100 字的 H2 标题才会配图，避免过度配图。</p>
+                        </div>
+                        <div class="bg-gray-900 p-3 rounded">
+                            <p class="font-semibold text-yellow-400">Q: Mermaid 图表不显示怎么办？</p>
+                            <p class="text-gray-400 mt-1">A: 在 GitHub、GitLab 等平台查看，或使用支持 Mermaid 的 Markdown 编辑器。</p>
+                        </div>
+                        <div class="bg-gray-900 p-3 rounded">
+                            <p class="font-semibold text-yellow-400">Q: 如何只重新生成某张图？</p>
+                            <p class="text-gray-400 mt-1">A: 使用命令行的增量更新功能，或在编辑模式删除该图片后重新配图。</p>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- 底部按钮 -->
+            <div class="mt-6 pt-4 border-t border-gray-700 flex justify-end">
+                <button onclick="toggleHelp()" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded text-sm">
+                    知道了
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="mt-12 py-6 border-t border-gray-800">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                <!-- 左侧：项目信息 -->
+                <div class="text-center md:text-left">
+                    <p class="text-gray-500 text-sm">
+                        Markdown Illustrator - Markdown 自动配图系统
+                    </p>
+                    <p class="text-gray-600 text-xs mt-1">
+                        支持 8 种图片来源 | 智能配图 | Web 交互界面
+                    </p>
+                </div>
+
+                <!-- 中间：链接 -->
+                <div class="flex gap-4 text-sm">
+                    <a href="https://github.com" target="_blank" class="text-gray-500 hover:text-blue-400 transition">
+                        GitHub
+                    </a>
+                    <a href="/docs/USER_GUIDE.md" target="_blank" class="text-gray-500 hover:text-blue-400 transition">
+                        使用指南
+                    </a>
+                    <a href="https://github.com" target="_blank" class="text-gray-500 hover:text-blue-400 transition">
+                        文档
+                    </a>
+                </div>
+
+                <!-- 右侧：备案信息 -->
+                <div class="text-center md:text-right">
+                    <p class="text-gray-600 text-xs">
+                        © 2025 Markdown Illustrator
+                    </p>
+                    <p class="text-gray-700 text-xs mt-1">
+                        <a href="https://beian.miit.gov.cn/" target="_blank" class="hover:text-gray-500 transition">
+                            备案号：京ICP备XXXXXXXX号-X
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head><title>Test hasMermaidKeywords</title></head>
+<body>
+    <h1>hasMermaidKeywords 测试</h1>
+    <div id="result"></div>
+    <script>
+        function hasMermaidKeywords(lines) {
+            const keywords = [
+                'stateDiagram', 'stateDiagram-v2',
+                'sequenceDiagram',
+                'flowchart', 'graph',
+                'classDiagram',
+                'erDiagram', 'er',
+                'mindmap',
+                'gantt',
+                'pie', 'gitGraph'
+            ];
+            const text = lines.join('\n');
+            return keywords.some(kw => text.toLowerCase().includes(kw.toLowerCase()));
+        }
+
+        // 测试用例
+        const testCases = [
+            {
+                name: 'stateDiagram-v2 (原始文件格式)',
+                lines: [
+                    'stateDiagram-v2',
+                    '    [*] --> 待处理',
+                    '    待处理 --> 处理中'
+                ],
+                expected: true
+            },
+            {
+                name: 'sequenceDiagram (时序图)',
+                lines: [
+                    'sequenceDiagram',
+                    '    participant User',
+                    '    User->>System: 发送请求'
+                ],
+                expected: true
+            },
+            {
+                name: 'flowchart (流程图)',
+                lines: [
+                    'flowchart TD',
+                    '    A[开始] --> B[结束]'
+                ],
+                expected: true
+            },
+            {
+                name: '普通 Python 代码',
+                lines: [
+                    'def hello():',
+                    '    print("Hello, World!")'
+                ],
+                expected: false
+            }
+        ];
+
+        let html = '<table border="1"><tr><th>测试用例</th><th>结果</th><th>预期</th><th>状态</th></tr>';
+        testCases.forEach(test => {
+            const result = hasMermaidKeywords(test.lines);
+            const status = result === test.expected ? '✓ 通过' : '✗ 失败';
+            html += `<tr><td>${test.name}</td><td>${result}</td><td>${test.expected}</td><td>${status}</td></tr>`;
+        });
+        html += '</table>';
+
+        document.getElementById('result').innerHTML = html;
+    </script>
+</body>
+</html>

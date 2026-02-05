@@ -1,0 +1,9 @@
+# Markdown Illustrator 环境变量配置示例
+# 复制此文件为 .env 并填入你的配置
+
+# 智谱AI API Key
+# 获取方式: https://open.bigmodel.cn/
+ZHIPUAI_API_KEY=cc2e4c7411c641448885b0873f9fbac1.UGP3QJTvqXqoVBbr
+
+# 或者使用 GLM_API_KEY（兼容旧名称）
+# GLM_API_KEY=your_api_key_here

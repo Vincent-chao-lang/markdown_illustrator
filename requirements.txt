@@ -1,0 +1,21 @@
+# Markdown 自动配图系统依赖
+
+# 核心依赖
+markdown>=3.5.0
+pyyaml>=6.0
+requests>=2.31.0
+zhipuai>=2.0.0
+openai>=1.0.0
+
+# 图片处理
+pillow>=10.0.0
+
+# 命令行工具
+click>=8.1.0
+rich>=13.0.0
+
+# 数据处理
+python-dateutil>=2.8.0
+
+# 环境变量管理
+python-dotenv>=1.0.0

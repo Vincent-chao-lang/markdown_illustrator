@@ -1,0 +1,34 @@
+# Markdown Illustrator 多用户配置文件
+#
+# 说明：
+# - password: 明文密码，启动时会自动哈希
+# - role: 用户角色 (admin/user)
+# - quota_limit: 每日配图次数限制
+
+users:
+  # 管理员账户（已在代码中预定义，这里仅作参考）
+  admin:
+    password: admin123
+    name: 管理员
+    role: admin
+    quota_limit: 1000
+
+  # 普通用户示例
+  user1:
+    password: user123
+    name: 张三
+    role: user
+    quota_limit: 50
+
+  user2:
+    password: user456
+    name: 李四
+    role: user
+    quota_limit: 50
+
+  # 开发人员账户
+  developer:
+    password: dev123
+    name: 开发人员
+    role: user
+    quota_limit: 200

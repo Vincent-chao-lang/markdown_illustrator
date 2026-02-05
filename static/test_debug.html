@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Mermaid Debug</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+</head>
+<body class="bg-gray-900 text-white p-8">
+    <h1 class="text-2xl font-bold mb-4">Mermaid 渲染调试</h1>
+
+    <div class="mb-4">
+        <h2 class="text-xl mb-2">方法1: 直接 HTML (应该工作)</h2>
+        <div id="direct-mermaid" class="mermaid bg-gray-800 p-4 rounded">
+stateDiagram-v2
+    [*] --> 待处理
+    待处理 --> 处理中
+    处理中 --> 已完成
+    已完成 --> [*]
+        </div>
+    </div>
+
+    <div class="mb-4">
+        <h2 class="text-xl mb-2">方法2: Marked 渲染 Markdown</h2>
+        <div id="marked-render" class="bg-gray-800 p-4 rounded"></div>
+    </div>
+
+    <div class="mb-4">
+        <h2 class="text-xl mb-2">方法3: 自定义解析后渲染</h2>
+        <div id="custom-render" class="bg-gray-800 p-4 rounded"></div>
+    </div>
+
+    <script>
+        // 初始化 Mermaid
+        mermaid.initialize({
+            startOnLoad: false,
+            theme: 'dark',
+            securityLevel: 'loose'
+        });
+
+        const testMarkdown = `\`\`\`mermaid
+stateDiagram-v2
+    [*] --> 待处理
+    待处理 --> 处理中
+    处理中 --> 已完成
+    已完成 --> [*]
+\`\`\``;
+
+        // 方法2: 直接用 marked 渲染
+        console.log('方法2: Marked 直接渲染');
+        const markedResult = marked.parse(testMarkdown);
+        document.getElementById('marked-render').innerHTML = markedResult;
+        console.log('Marked 输出:', markedResult);
+
+        // 方法3: 自定义解析 (模拟 selector.html 的逻辑)
+        console.log('方法3: 自定义解析');
+        const lines = testMarkdown.split('\n');
+        let inCodeBlock = false;
+        let codeBlockLang = '';
+        let codeBlockLines = [];
+        let renderedLines = [];
+
+        for (let line of lines) {
+            if (line.trim().startsWith('```')) {
+                if (!inCodeBlock) {
+                    inCodeBlock = true;
+                    codeBlockLang = line.trim().substring(3).trim() || 'text';
+                    codeBlockLines = [];
+                    console.log('代码块开始, 语言:', codeBlockLang);
+                } else {
+                    inCodeBlock = false;
+                    console.log('代码块结束, 语言:', codeBlockLang);
+
+                    if (codeBlockLang.toLowerCase() === 'mermaid') {
+                        const mermaidCode = codeBlockLines.join('\n');
+                        const containerId = 'mermaid-' + Date.now();
+                        renderedLines.push(`<div class="mermaid-container">`);
+                        renderedLines.push(`<div class="mermaid" id="${containerId}">${mermaidCode}</div>`);
+                        renderedLines.push(`</div>`);
+                        console.log('Mermaid 代码:', mermaidCode);
+                    } else {
+                        renderedLines.push('```' + codeBlockLang);
+                        renderedLines.push(...codeBlockLines);
+                        renderedLines.push('```');
+                    }
+                    codeBlockLines = [];
+                }
+                continue;
+            }
+
+            if (inCodeBlock) {
+                codeBlockLines.push(line);
+                console.log('添加代码行:', line);
+                continue;
+            }
+
+            renderedLines.push(line);
+        }
+
+        const markdownText = renderedLines.join('\n');
+        console.log('自定义解析结果:', markdownText);
+
+        // 使用 marked 渲染
+        document.getElementById('custom-render').innerHTML = marked.parse(markdownText);
+
+        // 渲染所有 Mermaid 图表
+        async function renderMermaid() {
+            console.log('开始渲染 Mermaid...');
+
+            // 渲染直接的 mermaid
+            const directDiv = document.getElementById('direct-mermaid');
+            try {
+                const directCode = directDiv.textContent;
+                console.log('直接 Mermaid 代码:', directCode);
+                const { svg } = await mermaid.render('direct-mermaid-svg', directCode);
+                directDiv.innerHTML = svg;
+                console.log('✓ 直接 Mermaid 渲染成功');
+            } catch (e) {
+                console.error('✗ 直接 Mermaid 渲染失败:', e);
+            }
+
+            // 渲染 marked 的 mermaid
+            const markedDivs = document.querySelectorAll('#marked-render .mermaid');
+            console.log('找到 marked mermaid 数量:', markedDivs.length);
+            for (const div of markedDivs) {
+                try {
+                    const code = div.textContent;
+                    console.log('Marked Mermaid 代码:', code);
+                    const { svg } = await mermaid.render('marked-mermaid-' + Date.now(), code);
+                    div.innerHTML = svg;
+                    console.log('✓ Marked Mermaid 渲染成功');
+                } catch (e) {
+                    console.error('✗ Marked Mermaid 渲染失败:', e);
+                }
+            }
+
+            // 渲染自定义解析的 mermaid
+            const customDivs = document.querySelectorAll('#custom-render .mermaid');
+            console.log('找到自定义解析 mermaid 数量:', customDivs.length);
+            for (const div of customDivs) {
+                try {
+                    const code = div.textContent;
+                    console.log('自定义 Mermaid 代码:', code);
+                    const { svg } = await mermaid.render('custom-mermaid-' + Date.now(), code);
+                    div.innerHTML = svg;
+                    console.log('✓ 自定义 Mermaid 渲染成功');
+                } catch (e) {
+                    console.error('✗ 自定义 Mermaid 渲染失败:', e);
+                }
+            }
+        }
+
+        renderMermaid();
+    </script>
+</body>
+</html>

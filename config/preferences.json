@@ -1,0 +1,164 @@
+{
+  "selections": {
+    "cover": [
+      {
+        "position": 0,
+        "candidate": 0,
+        "path": "MERMAID_CODE:state:stateDiagram-v2     [*] --> 待处理     待处理 --> 处理中     处理中 --> 已完成     处理中 --> 失败     失败 --> 待处理     已完成 --> [*]"
+      },
+      {
+        "position": 1,
+        "candidate": 0,
+        "path": "MERMAID_CODE:state:stateDiagram-v2     [*] --> 待处理     待处理 --> 处理中     处理中 --> 已完成     处理中 --> 失败     失败 --> 待处理     已完成 --> [*]"
+      },
+      {
+        "position": 0,
+        "candidate": 0,
+        "path": "MERMAID_CODE:state:stateDiagram-v2     [*] --> 待处理     待处理 --> 处理中     处理中 --> 已完成     处理中 --> 失败     失败 --> 待处理     已完成 --> [*]"
+      },
+      {
+        "position": 0,
+        "candidate": 0,
+        "path": "MERMAID_CODE:state:stateDiagram-v2     [*] --> 待处理     待处理 --> 处理中     处理中 --> 已完成     处理中 --> 失败     失败 --> 待处理     已完成 --> [*]"
+      },
+      {
+        "position": 0,
+        "candidate": 0,
+        "path": "output/images/0_cover_20260120_131931.png"
+      },
+      {
+        "position": 0,
+        "candidate": 1,
+        "path": "output/images/0_cover_20260120_131938_001.png"
+      }
+    ],
+    "section": [
+      {
+        "position": 8,
+        "candidate": 1,
+        "path": "MERMAID_CODE:flowchart:flowchart TD     A[\"蓝色代码流交织\"]     B[\"科技感与编程氛围\"]     A --> B     C[\"React Hooks技术主题\"]     B --> C"
+      },
+      {
+        "position": 8,
+        "candidate": 1,
+        "path": "MERMAID_CODE:flowchart:flowchart TD     A[\"蓝色代码流交织\"]     B[\"科技感与编程氛围\"]     A --> B     C[\"React Hooks技术主题\"]     B --> C"
+      },
+      {
+        "position": 4,
+        "candidate": 1,
+        "path": "MERMAID_CODE:flowchart:flowchart TD     A[\"useEffect执行流程：挂载→更新→清理→依赖变化→卸载\"]"
+      },
+      {
+        "position": 4,
+        "candidate": 1,
+        "path": "MERMAID_CODE:flowchart:flowchart TD     A[\"useEffect执行流程：挂载→更新→清理→依赖变化→卸载\"]"
+      },
+      {
+        "position": 4,
+        "candidate": 1,
+        "path": "MERMAID_CODE:flowchart:flowchart TD     A[\"useEffect执行流程：挂载→更新→清理→依赖变化→卸载\"]"
+      },
+      {
+        "position": 4,
+        "candidate": 1,
+        "path": "MERMAID_CODE:flowchart:flowchart TD     A[\"useEffect执行流程：挂载→更新→清理→依赖变化→卸载\"]"
+      },
+      {
+        "position": 4,
+        "candidate": 1,
+        "path": "MERMAID_CODE:flowchart:flowchart TD     A[\"useEffect执行流程：挂载→更新→清理→依赖变化→卸载\"]"
+      },
+      {
+        "position": 4,
+        "candidate": 1,
+        "path": "MERMAID_CODE:flowchart:flowchart TD     A[\"useEffect执行流程：挂载→更新→清理→依赖变化→卸载\"]"
+      },
+      {
+        "position": 4,
+        "candidate": 1,
+        "path": "MERMAID_CODE:flowchart:flowchart TD     A[\"useEffect执行流程：挂载→更新→清理→依赖变化→卸载\"]"
+      },
+      {
+        "position": 4,
+        "candidate": 1,
+        "path": "MERMAID_CODE:flowchart:flowchart TD     A[\"useEffect执行流程：挂载→更新→清理→依赖变化→卸载\"]"
+      },
+      {
+        "position": 4,
+        "candidate": 1,
+        "path": "MERMAID_CODE:flowchart:flowchart TD     A[\"useEffect执行流程：挂载→更新→清理→依赖变化→卸载\"]"
+      },
+      {
+        "position": 4,
+        "candidate": 1,
+        "path": "MERMAID_CODE:flowchart:flowchart TD     A[\"useEffect执行流程：挂载→更新→清理→依赖变化→卸载\"]"
+      },
+      {
+        "position": 4,
+        "candidate": 1,
+        "path": "MERMAID_CODE:flowchart:flowchart TD     A[\"useEffect执行流程：挂载→更新→清理→依赖变化→卸载\"]"
+      },
+      {
+        "position": 4,
+        "candidate": 1,
+        "path": "MERMAID_CODE:flowchart:flowchart TD     A[\"useEffect执行流程：挂载→更新→清理→依赖变化→卸载\"]"
+      },
+      {
+        "position": 4,
+        "candidate": 1,
+        "path": "MERMAID_CODE:flowchart:flowchart TD     A[\"useEffect执行流程：挂载→更新→清理→依赖变化→卸载\"]"
+      },
+      {
+        "position": 4,
+        "candidate": 1,
+        "path": "MERMAID_CODE:flowchart:flowchart TD     A[\"useEffect执行流程：挂载→更新→清理→依赖变化→卸载\"]"
+      },
+      {
+        "position": 4,
+        "candidate": 1,
+        "path": "MERMAID_CODE:flowchart:flowchart TD     A[\"useEffect执行流程：挂载→更新→清理→依赖变化→卸载\"]"
+      },
+      {
+        "position": 4,
+        "candidate": 1,
+        "path": "MERMAID_CODE:flowchart:flowchart TD     A[\"useEffect执行流程：挂载→更新→清理→依赖变化→卸载\"]"
+      },
+      {
+        "position": 4,
+        "candidate": 2,
+        "path": "MERMAID_CODE:flowchart:flowchart TD     A[\"useEffect执行流程：挂载→更新→清理→依赖变化→卸载\"]"
+      },
+      {
+        "position": 4,
+        "candidate": 2,
+        "path": "MERMAID_CODE:flowchart:flowchart TD     A[\"useEffect执行流程：挂载→更新→清理→依赖变化→卸载\"]"
+      },
+      {
+        "position": 4,
+        "candidate": 1,
+        "path": "MERMAID_CODE:flowchart:flowchart TD     A[\"useEffect执行流程：挂载→更新→清理→依赖变化→卸载\"]"
+      },
+      {
+        "position": 4,
+        "candidate": 1,
+        "path": "MERMAID_CODE:flowchart:flowchart TD     A[\"useEffect执行流程：挂载→更新→清理→依赖变化→卸载\"]"
+      }
+    ]
+  },
+  "stats": {
+    "cover": {
+      "total": 6,
+      "candidate_counts": {
+        "0": 1,
+        "1": 1
+      }
+    },
+    "section": {
+      "total": 22,
+      "candidate_counts": {
+        "1": 1,
+        "2": 1
+      }
+    }
+  }
+}
